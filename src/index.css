@@ -104,15 +104,15 @@
   }
   
   .glass-morphism {
-    @apply backdrop-blur-xl bg-white/10 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)];
+    @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)];
   }
   
   .glass-card {
-    @apply backdrop-blur-lg bg-black/40 border border-white/10 shadow-lg;
+    @apply backdrop-blur-lg bg-black/30 border border-white/10 shadow-lg;
   }
   
   .glass-panel {
-    @apply backdrop-blur-md bg-black/30 border border-white/5;
+    @apply backdrop-blur-md bg-black/20 border border-white/5;
   }
   
   .text-gradient {
@@ -127,5 +127,10 @@
     background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
     background-size: 1000px 100%;
     @apply animate-shimmer;
+  }
+  
+  .bg-aircraft {
+    @apply bg-fixed bg-cover bg-center;
+    background-image: url('https://images.unsplash.com/photo-1559268950-2d7ceb2efa3a');
   }
 }

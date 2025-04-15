@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import BackgroundEffect from "@/components/BackgroundEffect";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -17,7 +18,9 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      <BackgroundEffect />
+      
       <header className="w-full py-4 px-6 glass-panel flex items-center justify-between sticky top-0 z-10">
         <Link to="/" className="flex items-center gap-3">
           <PlaneTakeoff size={28} className="text-primary" />
@@ -52,7 +55,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         </div>
       </header>
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 relative z-10">
         {/* Sidebar */}
         <motion.aside
           initial={{ x: -280 }}

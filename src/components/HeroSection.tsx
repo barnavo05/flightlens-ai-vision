@@ -27,7 +27,7 @@ const HeroSection = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="glass-card p-8 rounded-2xl max-w-3xl w-full mx-auto mt-8"
+          className="glass-card p-8 rounded-2xl max-w-3xl w-full mx-auto mt-8 backdrop-blur-xl"
         >
           <div className="text-center mb-8">
             <h2 className="text-2xl font-semibold mb-2">Try It Now</h2>
@@ -36,10 +36,15 @@ const HeroSection = () => {
             </p>
           </div>
 
-          <div className="border-2 border-dashed border-primary/20 rounded-xl p-12 flex flex-col items-center justify-center gap-4">
-            <Upload size={48} className="text-primary/80" />
+          <div className="border-2 border-dashed border-primary/20 rounded-xl p-12 flex flex-col items-center justify-center gap-4 bg-black/30 backdrop-blur-sm">
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Upload size={48} className="text-primary/80" />
+            </motion.div>
             <p>Drag & drop an image here or click to browse</p>
-            <Button asChild>
+            <Button className="bg-primary/90 hover:bg-primary text-primary-foreground" asChild>
               <Link to="/upload">
                 Upload Image <ArrowRight size={16} className="ml-2" />
               </Link>
@@ -74,10 +79,13 @@ const HeroSection = () => {
 
 const FeatureCard = ({ title, description }: { title: string; description: string }) => {
   return (
-    <div className="glass-panel p-6 rounded-xl">
+    <motion.div 
+      whileHover={{ scale: 1.03 }}
+      className="glass-panel p-6 rounded-xl backdrop-blur-md"
+    >
       <h3 className="text-xl font-semibold mb-2">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
-    </div>
+    </motion.div>
   );
 };
 
