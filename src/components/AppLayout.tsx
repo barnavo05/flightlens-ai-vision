@@ -1,13 +1,15 @@
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { PlaneTakeoff, Home, Upload, BarChart3, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import BackgroundEffect from "@/components/BackgroundEffect";
+import { getCurrentUser, logout, isAuthenticated } from "@/services/authService";
+import { toast } from "sonner";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -15,7 +17,25 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isActive = (path: string) => location.pathname === path;
+  
+  const user = getCurrentUser();
+  
+  useEffect(() => {
+    // Check if user is authenticated
+    if (!isAuthenticated()) {
+      toast.error("Please login to access this page");
+      navigate("/login");
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
+  const userInitials = user ? user.name.substring(0, 2).toUpperCase() : "FL";
 
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -32,13 +52,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar>
-                  <AvatarImage src="https://github.com/shadcn.png" />
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarImage src={user?.email ? `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}` : undefined} />
+                  <AvatarFallback>{userInitials}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{user?.name || "User"}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <Link to="/profile" className="flex items-center w-full">Profile</Link>
@@ -47,9 +67,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                 <Link to="/settings" className="flex items-center w-full">Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Link to="/" className="flex items-center w-full">Log out</Link>
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -73,12 +91,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </nav>
           
           <div className="absolute bottom-0 left-0 right-0 p-4">
-            <Link to="/">
-              <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
-                <LogOut size={18} className="mr-2" />
-                Sign Out
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-muted-foreground hover:text-foreground"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} className="mr-2" />
+              Sign Out
+            </Button>
           </div>
         </motion.aside>
 

@@ -1,19 +1,23 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { PlaneTakeoff, Upload as UploadIcon, Camera, X, Loader2, ArrowLeft } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { PlaneTakeoff, Upload as UploadIcon, Camera, X, Loader2, ArrowLeft, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import AppLayout from "@/components/AppLayout";
+import { analyzeAircraftImage, saveRecognitionResult } from "@/services/aircraftRecognition";
+import useKeyboardShortcut from "@/hooks/useKeyboardShortcut";
 
 const Upload = () => {
   const [image, setImage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -53,12 +57,13 @@ const Upload = () => {
     reader.onload = (e) => {
       if (e.target && typeof e.target.result === 'string') {
         setImage(e.target.result);
+        toast.success('Image loaded successfully');
       }
     };
     reader.readAsDataURL(file);
   };
   
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!image) return;
     
     setIsUploading(true);
@@ -71,14 +76,29 @@ const Upload = () => {
       
       if (progress >= 100) {
         clearInterval(interval);
-        setTimeout(() => {
-          setIsUploading(false);
-          toast.success('Image uploaded successfully!');
-          // Navigate to results page in a real app
-          window.location.href = '/results';
-        }, 500);
       }
     }, 150);
+    
+    try {
+      // Call the recognition service
+      const result = await analyzeAircraftImage(image);
+      
+      // Save result to local storage
+      saveRecognitionResult(result);
+      
+      // Store the current result for the results page
+      sessionStorage.setItem('currentResult', JSON.stringify(result));
+      
+      // Navigate to results page
+      setTimeout(() => {
+        toast.success('Aircraft successfully identified!');
+        navigate('/results');
+      }, 500);
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      toast.error('Failed to analyze image');
+      setIsUploading(false);
+    }
   };
   
   const resetUpload = () => {
@@ -86,16 +106,79 @@ const Upload = () => {
     setUploadProgress(0);
   };
 
+  // Keyboard shortcuts
+  useKeyboardShortcut((e) => {
+    if (!isUploading) {
+      fileInputRef.current?.click();
+    }
+  }, { targetKey: 'u' });
+
+  useKeyboardShortcut((e) => {
+    if (image && !isUploading) {
+      handleUpload();
+    }
+  }, { targetKey: 'Enter' });
+
+  useKeyboardShortcut((e) => {
+    if (image && !isUploading) {
+      resetUpload();
+    }
+  }, { targetKey: 'Escape' });
+
+  useKeyboardShortcut((e) => {
+    setShowShortcuts(prevState => !prevState);
+  }, { targetKey: '?' });
+
   return (
     <AppLayout>
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold">Upload Aircraft Image</h1>
-          <Link to="/dashboard" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-            <ArrowLeft size={16} />
-            Back to Dashboard
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground"
+              onClick={() => setShowShortcuts(!showShortcuts)}
+            >
+              <Keyboard size={16} className="mr-1" />
+              Shortcuts
+            </Button>
+            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
+
+        {showShortcuts && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="glass-panel p-4 rounded-xl mb-6"
+          >
+            <h3 className="font-medium mb-2">Keyboard Shortcuts</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span>Upload image</span>
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">U</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Analyze image</span>
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">Enter</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Reset/cancel</span>
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">Esc</kbd>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Show/hide shortcuts</span>
+                <kbd className="px-2 py-1 bg-muted rounded text-xs">?</kbd>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <div className="glass-card p-8 rounded-xl">
           {!image ? (

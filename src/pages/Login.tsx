@@ -6,7 +6,8 @@ import { PlaneTakeoff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { login } from "@/services/authService";
+import BackgroundEffect from "@/components/BackgroundEffect";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -18,17 +19,21 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock authentication delay
-    setTimeout(() => {
+    try {
+      const response = await login(email, password);
+      if (response.success) {
+        navigate("/dashboard");
+      }
+    } finally {
       setIsLoading(false);
-      toast.success("Logged in successfully!");
-      navigate("/dashboard");
-    }, 1500);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+    <div className="min-h-screen flex flex-col relative">
+      <BackgroundEffect />
+      
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8 z-10 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -90,7 +95,7 @@ const Login = () => {
         </motion.div>
       </div>
 
-      <div className="p-4 text-center">
+      <div className="p-4 text-center relative z-10">
         <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary">
           <ArrowLeft size={16} className="mr-2" />
           Back to Home

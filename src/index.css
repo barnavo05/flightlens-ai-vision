@@ -104,15 +104,15 @@
   }
   
   .glass-morphism {
-    @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)];
+    @apply backdrop-blur-xl bg-white/10 border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)];
   }
   
   .glass-card {
-    @apply backdrop-blur-lg bg-black/30 border border-white/10 shadow-lg;
+    @apply backdrop-blur-lg bg-black/40 border border-white/10 shadow-lg;
   }
   
   .glass-panel {
-    @apply backdrop-blur-md bg-black/20 border border-white/5;
+    @apply backdrop-blur-md bg-black/30 border border-white/5;
   }
   
   .text-gradient {
@@ -132,5 +132,60 @@
   .bg-aircraft {
     @apply bg-fixed bg-cover bg-center;
     background-image: url('https://images.unsplash.com/photo-1559268950-2d7ceb2efa3a');
+  }
+  
+  /* Hover effects */
+  .hover-lift {
+    @apply transition-all duration-300 ease-in-out;
+    transform: translateY(0);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  
+  .animate-slide-in {
+    animation: slideIn 0.5s ease-out forwards;
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(-30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
   }
 }
