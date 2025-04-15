@@ -9,8 +9,33 @@ import { Progress } from "@/components/ui/progress";
 import AppLayout from "@/components/AppLayout";
 import { toast } from "sonner";
 
+// Define proper types for the detection result
+interface Specification {
+  [key: string]: string;
+}
+
+interface FlightPathData {
+  [key: string]: string;
+}
+
+interface SimilarModel {
+  name: string;
+  similarity: number;
+}
+
+interface DetectionResult {
+  aircraftId: string;
+  aircraftName: string;
+  confidence: number;
+  uploadedImage: string;
+  referenceImage: string;
+  specifications: Specification;
+  flightPathData: FlightPathData;
+  similarModels: SimilarModel[];
+}
+
 const Results = () => {
-  const [detectionResult, setDetectionResult] = useState<any>(null);
+  const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
@@ -111,7 +136,7 @@ const Results = () => {
                           <p className="text-xs text-muted-foreground capitalize">
                             {key.replace(/([A-Z])/g, ' $1').trim()}
                           </p>
-                          <p className="font-medium">{value}</p>
+                          <p className="font-medium">{String(value)}</p>
                         </div>
                       ))}
                     </div>
@@ -131,7 +156,7 @@ const Results = () => {
                               <span className="text-muted-foreground capitalize">
                                 {key.replace(/([A-Z])/g, ' $1').trim()}:
                               </span>
-                              <span className="font-medium">{value}</span>
+                              <span className="font-medium">{String(value)}</span>
                             </div>
                           ))}
                         </div>
@@ -190,7 +215,7 @@ const Results = () => {
               <h2 className="text-xl font-semibold mb-4">Similar Aircraft Models</h2>
               <div className="glass-panel p-6 rounded-xl">
                 <div className="space-y-4">
-                  {detectionResult.similarModels.map((model: any, index: number) => (
+                  {detectionResult.similarModels.map((model: SimilarModel, index: number) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="font-medium">{model.name}</span>
                       <div className="flex items-center gap-2">
