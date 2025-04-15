@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -127,5 +128,4 @@
     background-size: 1000px 100%;
     @apply animate-shimmer;
   }
-}
 }
