@@ -1,6 +1,6 @@
 
 import { motion } from "framer-motion";
-import { ArrowRight, Upload } from "lucide-react";
+import { ArrowRight, Upload, Drone, Radar, Shield, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -16,10 +16,10 @@ const HeroSection = () => {
           className="space-y-2"
         >
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tighter text-gradient">
-            AI-Powered Aircraft Recognition
+            AI-Powered Drone Detection System
           </h1>
           <p className="mx-auto max-w-[700px] text-lg md:text-xl text-muted-foreground mt-4">
-            Upload any aircraft image and instantly identify the exact model with detailed specifications using advanced AI.
+            Advanced multi-sensor technology for reliable drone detection, identification, and tracking using AI and machine learning.
           </p>
         </motion.div>
 
@@ -32,7 +32,7 @@ const HeroSection = () => {
           <div className="text-center mb-8">
             <h2 className="text-2xl font-semibold mb-2">Try It Now</h2>
             <p className="text-muted-foreground">
-              Upload an image of any aircraft to see the AI in action
+              Upload an image of a suspected drone to see our detection system in action
             </p>
           </div>
 
@@ -41,12 +41,12 @@ const HeroSection = () => {
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <Upload size={48} className="text-primary/80" />
+              <Drone size={48} className="text-primary/80" />
             </motion.div>
-            <p>Drag & drop an image here or click to browse</p>
+            <p>Drag & drop a drone image here or click to browse</p>
             <Button className="bg-primary/90 hover:bg-primary text-primary-foreground" asChild>
               <Link to="/upload">
-                Upload Image <ArrowRight size={16} className="ml-2" />
+                Start Detection <ArrowRight size={16} className="ml-2" />
               </Link>
             </Button>
           </div>
@@ -60,16 +60,19 @@ const HeroSection = () => {
           className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12"
         >
           <FeatureCard 
-            title="Instant Recognition" 
-            description="Our AI model can identify thousands of aircraft models with high precision"
+            icon={<Radar className="h-8 w-8 text-primary" />}
+            title="Multi-Sensor Detection" 
+            description="Combines radar, RF analysis, and visual recognition for comprehensive detection"
           />
           <FeatureCard 
-            title="Detailed Specs" 
-            description="Get comprehensive specifications including speed, range, and origin"
+            icon={<Radio className="h-8 w-8 text-primary" />}
+            title="RF Signal Analysis" 
+            description="Identifies drone controller signals and communication protocols in real-time"
           />
           <FeatureCard 
-            title="Flight History Scanner" 
-            description="Estimate flight paths based on image metadata"
+            icon={<Shield className="h-8 w-8 text-primary" />}
+            title="Threat Assessment" 
+            description="AI-powered evaluation of potential threats and automatic alert generation"
           />
         </motion.div>
       </div>
@@ -77,12 +80,13 @@ const HeroSection = () => {
   );
 };
 
-const FeatureCard = ({ title, description }: { title: string; description: string }) => {
+const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
   return (
     <motion.div 
       whileHover={{ scale: 1.03 }}
       className="glass-panel p-6 rounded-xl backdrop-blur-md"
     >
+      <div className="mb-4">{icon}</div>
       <h3 className="text-xl font-semibold mb-2">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
     </motion.div>

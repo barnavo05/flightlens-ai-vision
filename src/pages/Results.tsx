@@ -2,40 +2,17 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, Info, Share2, Download } from "lucide-react";
+import { ArrowLeft, Upload, Info, Share2, Download, AlertTriangle, Radar, Radio, Camera, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import AppLayout from "@/components/AppLayout";
 import { toast } from "sonner";
-
-// Define proper types for the detection result
-interface Specification {
-  [key: string]: string;
-}
-
-interface FlightPathData {
-  [key: string]: string;
-}
-
-interface SimilarModel {
-  name: string;
-  similarity: number;
-}
-
-interface DetectionResult {
-  aircraftId: string;
-  aircraftName: string;
-  confidence: number;
-  uploadedImage: string;
-  referenceImage: string;
-  specifications: Specification;
-  flightPathData: FlightPathData;
-  similarModels: SimilarModel[];
-}
+import { DroneDetectionResult, DetectionMethod } from "@/services/droneDetection";
 
 const Results = () => {
-  const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
+  const [detectionResult, setDetectionResult] = useState<DroneDetectionResult | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
@@ -45,7 +22,7 @@ const Results = () => {
     if (result) {
       setDetectionResult(JSON.parse(result));
     } else {
-      toast.error("No recognition result found");
+      toast.error("No detection result found");
       navigate("/upload");
     }
     setLoading(false);
@@ -60,6 +37,15 @@ const Results = () => {
   const handleDownload = () => {
     // Mock download functionality
     toast.success("Report downloaded!");
+  };
+  
+  const getThreatLevelColor = (level: string) => {
+    switch(level.toLowerCase()) {
+      case "high": return "bg-red-500 hover:bg-red-600";
+      case "medium": return "bg-amber-500 hover:bg-amber-600";
+      case "low": return "bg-green-500 hover:bg-green-600";
+      default: return "bg-blue-500 hover:bg-blue-600";
+    }
   };
   
   if (loading || !detectionResult) {
@@ -89,7 +75,12 @@ const Results = () => {
                 <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">
                   <ArrowLeft size={20} />
                 </Link>
-                <h1 className="text-2xl font-bold">Aircraft Detection Results</h1>
+                <h1 className="text-2xl font-bold">Drone Detection Results</h1>
+                <Badge 
+                  className={`${getThreatLevelColor(detectionResult.threatLevel)} ml-2`}
+                >
+                  {detectionResult.threatLevel} Threat
+                </Badge>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" className="gap-1" onClick={handleShare}>
@@ -103,17 +94,17 @@ const Results = () => {
                 <Button size="sm" asChild>
                   <Link to="/upload">
                     <Upload size={16} className="mr-2" />
-                    New Scan
+                    New Detection
                   </Link>
                 </Button>
               </div>
             </div>
 
-            {/* Results Overview */}
+            {/* Detection Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               <div className="glass-card rounded-xl p-6 order-2 lg:order-1">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-gradient-primary">{detectionResult.aircraftName}</h2>
+                  <h2 className="text-2xl font-bold text-gradient-primary">{detectionResult.droneName}</h2>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Confidence</span>
                     <div className="flex items-center gap-2">
@@ -125,8 +116,8 @@ const Results = () => {
 
                 <Tabs defaultValue="specifications">
                   <TabsList className="grid grid-cols-2 mb-4">
-                    <TabsTrigger value="specifications">Specifications</TabsTrigger>
-                    <TabsTrigger value="flightPath">Flight Path Data</TabsTrigger>
+                    <TabsTrigger value="specifications">Drone Specifications</TabsTrigger>
+                    <TabsTrigger value="analysis">Detection Analysis</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="specifications" className="space-y-4">
@@ -142,16 +133,16 @@ const Results = () => {
                     </div>
                   </TabsContent>
                   
-                  <TabsContent value="flightPath">
+                  <TabsContent value="analysis">
                     <div className="space-y-4">
                       <div className="glass-panel p-4 rounded-lg">
-                        <h3 className="text-lg font-medium mb-2">Flight Path Analysis</h3>
+                        <h3 className="text-lg font-medium mb-2">Detection Analysis</h3>
                         <p className="text-sm text-muted-foreground mb-4">
-                          Based on image metadata and visual analysis, we've estimated the following:
+                          Based on sensor data and AI analysis, we've detected the following:
                         </p>
                         
                         <div className="space-y-3">
-                          {Object.entries(detectionResult.flightPathData).map(([key, value]) => (
+                          {Object.entries(detectionResult.analysisData).map(([key, value]) => (
                             <div key={key} className="flex justify-between">
                               <span className="text-muted-foreground capitalize">
                                 {key.replace(/([A-Z])/g, ' $1').trim()}:
@@ -160,13 +151,20 @@ const Results = () => {
                             </div>
                           ))}
                         </div>
+                        
+                        <div className="mt-4 pt-4 border-t border-border/30">
+                          <p className="font-medium">Detection Timestamp</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(detectionResult.detectionTime).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
                       
                       <div className="glass-panel p-4 rounded-lg flex items-center gap-3">
-                        <Info size={18} className="text-primary" />
+                        <AlertTriangle size={18} className="text-amber-500" />
                         <p className="text-sm">
-                          Flight path data is estimated and may not be 100% accurate. For precise information, 
-                          refer to official flight records.
+                          Detection analysis is based on current sensor data. Drone capabilities
+                          and behavior may change.
                         </p>
                       </div>
                     </div>
@@ -182,11 +180,11 @@ const Results = () => {
               >
                 <div className="flex flex-col gap-4">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Your Image</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Detection Image</h3>
                     <div className="aspect-video bg-black rounded-lg overflow-hidden">
                       <img 
-                        src={detectionResult.uploadedImage} 
-                        alt="Uploaded aircraft" 
+                        src={detectionResult.detectedImage} 
+                        alt="Detected drone" 
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -197,7 +195,7 @@ const Results = () => {
                     <div className="aspect-video bg-black rounded-lg overflow-hidden">
                       <img 
                         src={detectionResult.referenceImage} 
-                        alt="Reference aircraft" 
+                        alt="Reference drone" 
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -206,24 +204,83 @@ const Results = () => {
               </motion.div>
             </div>
             
-            {/* Similar Models */}
+            {/* Detection Methods */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <h2 className="text-xl font-semibold mb-4">Similar Aircraft Models</h2>
+              <h2 className="text-xl font-semibold mb-4">Detection Methods</h2>
               <div className="glass-panel p-6 rounded-xl">
                 <div className="space-y-4">
-                  {detectionResult.similarModels.map((model: SimilarModel, index: number) => (
+                  {detectionResult.detectionMethods.map((method: DetectionMethod, index: number) => (
                     <div key={index} className="flex items-center justify-between">
-                      <span className="font-medium">{model.name}</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={model.similarity} className="w-24 h-2" />
-                        <span className="text-sm">{model.similarity}%</span>
+                        {method.name.toLowerCase().includes("rf") && <Radio size={18} className="text-primary" />}
+                        {method.name.toLowerCase().includes("visual") && <Camera size={18} className="text-primary" />}
+                        {method.name.toLowerCase().includes("radar") && <Radar size={18} className="text-primary" />}
+                        {method.name.toLowerCase().includes("acoustic") && <Shield size={18} className="text-primary" />}
+                        {!method.name.toLowerCase().includes("rf") && !method.name.toLowerCase().includes("visual") && 
+                         !method.name.toLowerCase().includes("radar") && !method.name.toLowerCase().includes("acoustic") && 
+                         <Info size={18} className="text-primary" />}
+                        <span className="font-medium">{method.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Progress value={method.accuracy} className="w-24 h-2" />
+                        <span className="text-sm">{method.accuracy}%</span>
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Recommendations Section */}
+                <div className="mt-8 pt-6 border-t border-border/30">
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <Shield size={18} className="text-primary" />
+                    Recommended Actions
+                  </h3>
+                  <ul className="space-y-2 text-sm">
+                    {detectionResult.threatLevel.toLowerCase() === "low" && (
+                      <>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-green-500">✓</span>
+                          Monitor drone activity but no immediate action required
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-green-500">✓</span>
+                          Log detection in system for historical tracking
+                        </li>
+                      </>
+                    )}
+                    {detectionResult.threatLevel.toLowerCase() === "medium" && (
+                      <>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-amber-500">!</span>
+                          Continue tracking and assess flight pattern
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-amber-500">!</span>
+                          Notify security personnel of potential restricted zone entry
+                        </li>
+                      </>
+                    )}
+                    {detectionResult.threatLevel.toLowerCase() === "high" && (
+                      <>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-red-500">!</span>
+                          Immediate alert to security team required
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-red-500">!</span>
+                          Initiate countermeasures protocol if authorized
+                        </li>
+                      </>
+                    )}
+                    <li className="flex gap-2 items-start">
+                      <span className="text-primary">i</span>
+                      Archive detection data for further analysis
+                    </li>
+                  </ul>
                 </div>
               </div>
             </motion.div>

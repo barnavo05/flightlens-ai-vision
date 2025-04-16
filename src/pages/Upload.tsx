@@ -2,20 +2,22 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { PlaneTakeoff, Upload as UploadIcon, Camera, X, Loader2, ArrowLeft, Keyboard } from "lucide-react";
+import { Drone, Upload as UploadIcon, Camera, X, Loader2, ArrowLeft, Keyboard, Radar, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppLayout from "@/components/AppLayout";
-import { analyzeAircraftImage, saveRecognitionResult } from "@/services/aircraftRecognition";
+import { detectDrone, saveDetectionResult } from "@/services/droneDetection";
 import useKeyboardShortcut from "@/hooks/useKeyboardShortcut";
 
 const Upload = () => {
   const [image, setImage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [detectionMethod, setDetectionMethod] = useState<"visual" | "rf" | "combined">("combined");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   
@@ -63,12 +65,12 @@ const Upload = () => {
     reader.readAsDataURL(file);
   };
   
-  const handleUpload = async () => {
+  const handleDetection = async () => {
     if (!image) return;
     
-    setIsUploading(true);
+    setIsProcessing(true);
     
-    // Simulate upload progress
+    // Simulate detection progress
     let progress = 0;
     const interval = setInterval(() => {
       progress += 5;
@@ -80,24 +82,24 @@ const Upload = () => {
     }, 150);
     
     try {
-      // Call the recognition service
-      const result = await analyzeAircraftImage(image);
+      // Call the detection service
+      const result = await detectDrone(image);
       
       // Save result to local storage
-      saveRecognitionResult(result);
+      saveDetectionResult(result);
       
       // Store the current result for the results page
       sessionStorage.setItem('currentResult', JSON.stringify(result));
       
       // Navigate to results page
       setTimeout(() => {
-        toast.success('Aircraft successfully identified!');
+        toast.success('Drone successfully detected!');
         navigate('/results');
       }, 500);
     } catch (error) {
       console.error('Error analyzing image:', error);
       toast.error('Failed to analyze image');
-      setIsUploading(false);
+      setIsProcessing(false);
     }
   };
   
@@ -108,19 +110,19 @@ const Upload = () => {
 
   // Keyboard shortcuts
   useKeyboardShortcut((e) => {
-    if (!isUploading) {
+    if (!isProcessing) {
       fileInputRef.current?.click();
     }
   }, { targetKey: 'u' });
 
   useKeyboardShortcut((e) => {
-    if (image && !isUploading) {
-      handleUpload();
+    if (image && !isProcessing) {
+      handleDetection();
     }
   }, { targetKey: 'Enter' });
 
   useKeyboardShortcut((e) => {
-    if (image && !isUploading) {
+    if (image && !isProcessing) {
       resetUpload();
     }
   }, { targetKey: 'Escape' });
@@ -133,7 +135,7 @@ const Upload = () => {
     <AppLayout>
       <div className="container max-w-4xl mx-auto py-8 px-4">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">Upload Aircraft Image</h1>
+          <h1 className="text-2xl font-bold">Drone Detection System</h1>
           <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
@@ -165,7 +167,7 @@ const Upload = () => {
                 <kbd className="px-2 py-1 bg-muted rounded text-xs">U</kbd>
               </div>
               <div className="flex items-center justify-between">
-                <span>Analyze image</span>
+                <span>Start detection</span>
                 <kbd className="px-2 py-1 bg-muted rounded text-xs">Enter</kbd>
               </div>
               <div className="flex items-center justify-between">
@@ -181,6 +183,42 @@ const Upload = () => {
         )}
 
         <div className="glass-card p-8 rounded-xl">
+          {/* Detection method tabs */}
+          <Tabs defaultValue="combined" className="mb-6" onValueChange={(value) => setDetectionMethod(value as any)}>
+            <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto">
+              <TabsTrigger value="visual" className="flex items-center gap-2">
+                <Camera size={16} />
+                Visual
+              </TabsTrigger>
+              <TabsTrigger value="rf" className="flex items-center gap-2">
+                <Radio size={16} />
+                RF Analysis
+              </TabsTrigger>
+              <TabsTrigger value="combined" className="flex items-center gap-2">
+                <Radar size={16} />
+                Combined
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="visual" className="pt-4">
+              <div className="text-center text-sm text-muted-foreground mb-6">
+                <p>Visual detection uses AI-powered image recognition to identify drones.</p>
+                <p className="mt-2">Best for clear line of sight and good lighting conditions.</p>
+              </div>
+            </TabsContent>
+            <TabsContent value="rf" className="pt-4">
+              <div className="text-center text-sm text-muted-foreground mb-6">
+                <p>Radio Frequency analysis detects drone communication signals.</p>
+                <p className="mt-2">Works beyond visual range and in all weather conditions.</p>
+              </div>
+            </TabsContent>
+            <TabsContent value="combined" className="pt-4">
+              <div className="text-center text-sm text-muted-foreground mb-6">
+                <p>Combined method uses multiple detection technologies simultaneously.</p>
+                <p className="mt-2">Provides highest accuracy but requires more processing time.</p>
+              </div>
+            </TabsContent>
+          </Tabs>
+
           {!image ? (
             <div
               className={`border-2 border-dashed ${isDragging ? 'border-primary' : 'border-primary/30'} rounded-xl p-12 flex flex-col items-center justify-center gap-4 transition-colors`}
@@ -194,11 +232,11 @@ const Upload = () => {
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-4"
               >
-                <UploadIcon size={40} className="text-primary" />
+                <Drone size={40} className="text-primary" />
               </motion.div>
-              <h2 className="text-xl font-semibold">Drop your image here</h2>
+              <h2 className="text-xl font-semibold">Upload drone detection data</h2>
               <p className="text-muted-foreground text-center max-w-md">
-                Drag and drop an aircraft image, or click the button below to browse your files
+                Drag and drop an image of a suspected drone, or click the button below to browse your files
               </p>
               <div className="flex flex-wrap gap-4 justify-center mt-4">
                 <Button 
@@ -237,18 +275,18 @@ const Upload = () => {
                 </button>
               </div>
               
-              {isUploading ? (
+              {isProcessing ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Loader2 size={18} className="animate-spin" />
-                    <p>Processing image...</p>
+                    <p>Processing detection using {detectionMethod} method...</p>
                   </div>
                   <Progress value={uploadProgress} className="h-2" />
                 </div>
               ) : (
                 <div className="flex gap-4">
-                  <Button onClick={handleUpload} className="flex-1">
-                    Identify Aircraft
+                  <Button onClick={handleDetection} className="flex-1">
+                    Start Drone Detection
                   </Button>
                   <Button variant="outline" onClick={resetUpload}>
                     Choose Different Image
@@ -260,25 +298,49 @@ const Upload = () => {
         </div>
         
         <div className="mt-8 glass-panel p-6 rounded-xl">
-          <h2 className="text-lg font-semibold mb-4">Tips for Best Results</h2>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex gap-2 items-start">
-              <span className="text-primary font-medium">✓</span>
-              Use clear, well-lit images of the aircraft
-            </li>
-            <li className="flex gap-2 items-start">
-              <span className="text-primary font-medium">✓</span>
-              Side profiles or 45° angles work best for identification
-            </li>
-            <li className="flex gap-2 items-start">
-              <span className="text-primary font-medium">✓</span>
-              Make sure the aircraft is the main subject in the image
-            </li>
-            <li className="flex gap-2 items-start">
-              <span className="text-primary font-medium">✓</span>
-              If possible, include images with visible aircraft markings
-            </li>
-          </ul>
+          <h2 className="text-lg font-semibold mb-4">Detection System Capabilities</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <h3 className="font-medium flex items-center gap-2">
+                <Radar className="h-4 w-4 text-primary" />
+                Radar Detection
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Detection range up to 10km. Works in all weather conditions
+                and provides accurate position, altitude, and speed data.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium flex items-center gap-2">
+                <Radio className="h-4 w-4 text-primary" />
+                RF Analysis
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Identifies drone controller signals and communication protocols
+                for early detection, even before visual confirmation.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium flex items-center gap-2">
+                <Camera className="h-4 w-4 text-primary" />
+                Visual Recognition
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                AI-powered image analysis for drone type identification
+                with thermal and optical camera support.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium flex items-center gap-2">
+                <Drone className="h-4 w-4 text-primary" />
+                Multi-Drone Tracking
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Capable of simultaneously tracking multiple drones and
+                distinguishing between authorized and unauthorized UAVs.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </AppLayout>
