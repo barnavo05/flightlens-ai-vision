@@ -1,8 +1,7 @@
-
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { Drone, Upload as UploadIcon, Camera, X, Loader2, ArrowLeft, Keyboard, Radar, Radio } from "lucide-react";
+import { Plane, Upload as UploadIcon, Camera, X, Loader2, ArrowLeft, Keyboard, Radar, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -49,7 +48,6 @@ const Upload = () => {
   };
   
   const handleFile = (file: File) => {
-    // Check if file is an image
     if (!file.type.match('image.*')) {
       toast.error('Please select an image file');
       return;
@@ -70,7 +68,6 @@ const Upload = () => {
     
     setIsProcessing(true);
     
-    // Simulate detection progress
     let progress = 0;
     const interval = setInterval(() => {
       progress += 5;
@@ -82,16 +79,12 @@ const Upload = () => {
     }, 150);
     
     try {
-      // Call the detection service
       const result = await detectDrone(image);
       
-      // Save result to local storage
       saveDetectionResult(result);
       
-      // Store the current result for the results page
       sessionStorage.setItem('currentResult', JSON.stringify(result));
       
-      // Navigate to results page
       setTimeout(() => {
         toast.success('Drone successfully detected!');
         navigate('/results');
@@ -108,7 +101,6 @@ const Upload = () => {
     setUploadProgress(0);
   };
 
-  // Keyboard shortcuts
   useKeyboardShortcut((e) => {
     if (!isProcessing) {
       fileInputRef.current?.click();
@@ -183,7 +175,6 @@ const Upload = () => {
         )}
 
         <div className="glass-card p-8 rounded-xl">
-          {/* Detection method tabs */}
           <Tabs defaultValue="combined" className="mb-6" onValueChange={(value) => setDetectionMethod(value as any)}>
             <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto">
               <TabsTrigger value="visual" className="flex items-center gap-2">
@@ -232,7 +223,7 @@ const Upload = () => {
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-4"
               >
-                <Drone size={40} className="text-primary" />
+                <Plane size={40} className="text-primary" />
               </motion.div>
               <h2 className="text-xl font-semibold">Upload drone detection data</h2>
               <p className="text-muted-foreground text-center max-w-md">
@@ -332,7 +323,7 @@ const Upload = () => {
             </div>
             <div className="space-y-2">
               <h3 className="font-medium flex items-center gap-2">
-                <Drone className="h-4 w-4 text-primary" />
+                <Plane className="h-4 w-4 text-primary" />
                 Multi-Drone Tracking
               </h3>
               <p className="text-sm text-muted-foreground">

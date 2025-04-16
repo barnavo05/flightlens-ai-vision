@@ -1,6 +1,6 @@
 
 import { motion } from "framer-motion";
-import { ArrowRight, Upload, Drone, Radar, Shield, Radio } from "lucide-react";
+import { ArrowRight, Upload, Plane, Radar, Shield, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -41,7 +41,7 @@ const HeroSection = () => {
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <Drone size={48} className="text-primary/80" />
+              <Plane size={48} className="text-primary/80" />
             </motion.div>
             <p>Drag & drop a drone image here or click to browse</p>
             <Button className="bg-primary/90 hover:bg-primary text-primary-foreground" asChild>
