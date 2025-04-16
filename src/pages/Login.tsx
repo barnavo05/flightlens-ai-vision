@@ -24,6 +24,8 @@ const Login = () => {
       if (response.success) {
         navigate("/dashboard");
       }
+    } catch (error) {
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }

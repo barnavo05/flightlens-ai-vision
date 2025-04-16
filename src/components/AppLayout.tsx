@@ -1,5 +1,4 @@
-
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { PlaneTakeoff, Home, Upload, BarChart3, Settings, LogOut } from "lucide-react";
@@ -18,24 +17,48 @@ interface AppLayoutProps {
 const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  
   const isActive = (path: string) => location.pathname === path;
   
-  const user = getCurrentUser();
-  
   useEffect(() => {
-    // Check if user is authenticated
-    if (!isAuthenticated()) {
-      toast.error("Please login to access this page");
-      navigate("/login");
-    }
+    const checkAuth = async () => {
+      try {
+        const isAuth = await isAuthenticated();
+        if (!isAuth) {
+          toast.error("Please login to access this page");
+          navigate("/login");
+          return;
+        }
+        
+        const userData = await getCurrentUser();
+        setUser(userData);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        navigate("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
   }, [navigate]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 
   const userInitials = user ? user.name.substring(0, 2).toUpperCase() : "FL";
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -74,7 +97,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </header>
 
       <div className="flex flex-1 relative z-10">
-        {/* Sidebar */}
         <motion.aside
           initial={{ x: -280 }}
           animate={{ x: 0 }}
@@ -102,7 +124,6 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         </motion.aside>
 
-        {/* Main content */}
         <main className="flex-1">
           {children}
         </main>

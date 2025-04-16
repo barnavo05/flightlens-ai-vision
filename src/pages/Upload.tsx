@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Plane, Upload as UploadIcon, Camera, X, Loader2, ArrowLeft, Keyboard, Radar, Radio } from "lucide-react";
@@ -8,17 +8,30 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppLayout from "@/components/AppLayout";
 import { detectDrone, saveDetectionResult } from "@/services/droneDetection";
+import { uploadImage, saveDetectionToSupabase } from "@/services/supabaseDroneService";
+import { getCurrentUser } from "@/services/authService";
 import useKeyboardShortcut from "@/hooks/useKeyboardShortcut";
 
 const Upload = () => {
   const [image, setImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [detectionMethod, setDetectionMethod] = useState<"visual" | "rf" | "combined">("combined");
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; email: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    };
+    
+    fetchUser();
+  }, []);
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -53,6 +66,8 @@ const Upload = () => {
       return;
     }
     
+    setImageFile(file);
+    
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target && typeof e.target.result === 'string') {
@@ -64,7 +79,7 @@ const Upload = () => {
   };
   
   const handleDetection = async () => {
-    if (!image) return;
+    if (!image || !currentUser) return;
     
     setIsProcessing(true);
     
@@ -79,9 +94,21 @@ const Upload = () => {
     }, 150);
     
     try {
-      const result = await detectDrone(image);
+      let imageUrl = image;
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile, currentUser.id);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+      
+      const result = await detectDrone(imageUrl);
       
       saveDetectionResult(result);
+      
+      if (currentUser) {
+        await saveDetectionToSupabase(result, currentUser.id);
+      }
       
       sessionStorage.setItem('currentResult', JSON.stringify(result));
       
@@ -92,7 +119,9 @@ const Upload = () => {
     } catch (error) {
       console.error('Error analyzing image:', error);
       toast.error('Failed to analyze image');
+    } finally {
       setIsProcessing(false);
+      clearInterval(interval);
     }
   };
   
