@@ -4,7 +4,8 @@ import {
   signInWithEmail, 
   signUpWithEmail, 
   signOut as supabaseSignOut, 
-  getCurrentUser as getSupabaseUser 
+  getCurrentUser as getSupabaseUser,
+  isDemoMode
 } from "@/lib/supabase";
 
 // Types
@@ -65,6 +66,11 @@ export const login = async (email: string, password: string): Promise<AuthRespon
       email: email
     };
     
+    // In demo mode, store the demo user in localStorage
+    if (isDemoMode) {
+      localStorage.setItem('demoUser', JSON.stringify(data.user));
+    }
+    
     toast.success("Login successful!");
     return { success: true, user };
   } catch (error) {
@@ -95,7 +101,14 @@ export const signup = async (name: string, email: string, password: string): Pro
       email: email
     };
     
-    toast.success("Account created successfully! Please check your email for verification.");
+    // In demo mode, store the demo user in localStorage
+    if (isDemoMode) {
+      localStorage.setItem('demoUser', JSON.stringify(data.user));
+    }
+    
+    toast.success(isDemoMode ? 
+      "Demo account created successfully!" : 
+      "Account created successfully! Please check your email for verification.");
     return { success: true, user };
   } catch (error) {
     console.error("Signup error:", error);
@@ -107,6 +120,11 @@ export const signup = async (name: string, email: string, password: string): Pro
 // Log out
 export const logout = async (): Promise<void> => {
   try {
+    // In demo mode, clear localStorage
+    if (isDemoMode) {
+      localStorage.removeItem('demoUser');
+    }
+    
     await supabaseSignOut();
     toast.success("Logged out successfully");
   } catch (error) {

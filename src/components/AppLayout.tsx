@@ -2,13 +2,13 @@
 import { ReactNode, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { PlaneTakeoff, Home, Upload, BarChart3, Settings, LogOut, Loader2 } from "lucide-react";
+import { PlaneTakeoff, Home, Upload, BarChart3, Settings, LogOut, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import BackgroundEffect from "@/components/BackgroundEffect";
-import { getCurrentUser, signOut, isAuthenticated } from "@/lib/supabase";
+import { getCurrentUser, signOut, isAuthenticated, isDemoMode } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
@@ -89,7 +89,27 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     <div className="min-h-screen flex flex-col relative">
       <BackgroundEffect />
       
-      <header className="w-full py-4 px-6 glass-panel flex items-center justify-between sticky top-0 z-10">
+      {isDemoMode && (
+        <div className="bg-amber-500/90 text-amber-950 py-2 px-6 text-sm text-center flex items-center justify-center gap-2 sticky top-0 z-20">
+          <AlertCircle size={16} />
+          <p>
+            Running in demo mode with placeholder credentials. 
+            <a 
+              href="https://supabase.com/dashboard/sign-up" 
+              target="_blank" 
+              rel="noreferrer"
+              className="underline ml-1 font-medium hover:text-amber-800"
+            >
+              Create a free Supabase account
+            </a> for full functionality.
+          </p>
+        </div>
+      )}
+      
+      <header className={cn(
+        "w-full py-4 px-6 glass-panel flex items-center justify-between sticky z-10",
+        isDemoMode ? "top-8" : "top-0"
+      )}>
         <Link to="/" className="flex items-center gap-3">
           <PlaneTakeoff size={28} className="text-primary" />
           <h1 className="text-xl font-bold text-gradient">FlightLens AI</h1>
@@ -128,7 +148,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="glass-panel h-[calc(100vh-73px)] w-64 sticky top-[73px] hidden md:block border-r border-border/40"
+            className={cn(
+              "glass-panel w-64 sticky border-r border-border/40 hidden md:block",
+              isDemoMode ? "h-[calc(100vh-105px)] top-[105px]" : "h-[calc(100vh-73px)] top-[73px]"
+            )}
           >
             <nav className="p-4">
               <ul className="space-y-2">
