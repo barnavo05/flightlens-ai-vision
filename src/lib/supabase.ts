@@ -17,40 +17,88 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Authentication functions
 export async function signInWithEmail(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  
-  return { data, error };
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) {
+      console.error('Login error:', error.message);
+    }
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Unexpected error during login:', err);
+    return { 
+      data: null, 
+      error: { message: 'An unexpected error occurred during login.' } 
+    };
+  }
 }
 
 export async function signUpWithEmail(email: string, password: string, metadata: { name: string }) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: metadata,
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata,
+      }
+    });
+    
+    if (error) {
+      console.error('Signup error:', error.message);
     }
-  });
-  
-  return { data, error };
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Unexpected error during signup:', err);
+    return { 
+      data: null, 
+      error: { message: 'An unexpected error occurred during signup.' } 
+    };
+  }
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  try {
+    const { error } = await supabase.auth.signOut();
+    return { error };
+  } catch (err) {
+    console.error('Unexpected error during signout:', err);
+    return { 
+      error: { message: 'An unexpected error occurred during sign out.' } 
+    };
+  }
 }
 
 export async function getCurrentSession() {
-  const { data } = await supabase.auth.getSession();
-  return data.session;
+  try {
+    const { data } = await supabase.auth.getSession();
+    return data.session;
+  } catch (err) {
+    console.error('Error getting session:', err);
+    return null;
+  }
 }
 
 export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('Error getting user:', error.message);
+      return null;
+    }
+    return data.user;
+  } catch (err) {
+    console.error('Unexpected error getting user:', err);
     return null;
   }
-  return data.user;
+}
+
+// Helper function to check if a user is logged in
+export async function isAuthenticated() {
+  const session = await getCurrentSession();
+  return !!session;
 }

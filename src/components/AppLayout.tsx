@@ -1,14 +1,16 @@
+
 import { ReactNode, useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { PlaneTakeoff, Home, Upload, BarChart3, Settings, LogOut } from "lucide-react";
+import { PlaneTakeoff, Home, Upload, BarChart3, Settings, LogOut, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import BackgroundEffect from "@/components/BackgroundEffect";
-import { getCurrentUser, logout, isAuthenticated } from "@/services/authService";
+import { getCurrentUser, signOut, isAuthenticated } from "@/lib/supabase";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -17,11 +19,17 @@ interface AppLayoutProps {
 const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  
   const isActive = (path: string) => location.pathname === path;
   
+  // Use React Query for caching and better performance
+  const { data: user, isLoading, error } = useQuery({
+    queryKey: ['user'],
+    queryFn: getCurrentUser,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1
+  });
+  
+  // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -29,16 +37,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         if (!isAuth) {
           toast.error("Please login to access this page");
           navigate("/login");
-          return;
         }
-        
-        const userData = await getCurrentUser();
-        setUser(userData);
       } catch (error) {
         console.error("Auth check error:", error);
         navigate("/login");
-      } finally {
-        setLoading(false);
       }
     };
     
@@ -46,16 +48,39 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await logout();
+    const { error } = await signOut();
+    if (error) {
+      toast.error(error.message || "Failed to sign out");
+      return;
+    }
+    
+    toast.success("Successfully signed out");
     navigate("/");
   };
 
-  const userInitials = user ? user.name.substring(0, 2).toUpperCase() : "FL";
+  const userInitials = user?.user_metadata?.name 
+    ? user.user_metadata.name.substring(0, 2).toUpperCase() 
+    : "FL";
   
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading your dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="glass-panel p-6 rounded-xl max-w-md text-center">
+          <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
+          <p className="text-muted-foreground mb-4">We couldn't load your profile information.</p>
+          <Button onClick={() => navigate("/login")}>
+            Return to Login
+          </Button>
+        </div>
       </div>
     );
   }
@@ -75,19 +100,19 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar>
-                  <AvatarImage src={user?.email ? `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}` : undefined} />
+                  <AvatarImage src={user?.email ? `https://api.dicebear.com/7.x/initials/svg?seed=${user.user_metadata?.name || user.email}` : undefined} />
                   <AvatarFallback>{userInitials}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user?.name || "User"}</DropdownMenuLabel>
+              <DropdownMenuLabel>{user?.user_metadata?.name || user?.email || "User"}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Link to="/profile" className="flex items-center w-full">Profile</Link>
+              <DropdownMenuItem asChild>
+                <Link to="/profile" className="w-full cursor-pointer">Profile</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link to="/settings" className="flex items-center w-full">Settings</Link>
+              <DropdownMenuItem asChild>
+                <Link to="/settings" className="w-full cursor-pointer">Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
@@ -97,34 +122,37 @@ const AppLayout = ({ children }: AppLayoutProps) => {
       </header>
 
       <div className="flex flex-1 relative z-10">
-        <motion.aside
-          initial={{ x: -280 }}
-          animate={{ x: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="glass-panel h-[calc(100vh-73px)] w-64 sticky top-[73px] hidden md:block border-r border-border/40"
-        >
-          <nav className="p-4">
-            <ul className="space-y-2">
-              <NavItem href="/dashboard" icon={<Home size={18} />} label="Dashboard" active={isActive('/dashboard')} />
-              <NavItem href="/upload" icon={<Upload size={18} />} label="Upload" active={isActive('/upload')} />
-              <NavItem href="/analytics" icon={<BarChart3 size={18} />} label="Analytics" active={isActive('/analytics')} />
-              <NavItem href="/settings" icon={<Settings size={18} />} label="Settings" active={isActive('/settings')} />
-            </ul>
-          </nav>
-          
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-muted-foreground hover:text-foreground"
-              onClick={handleLogout}
-            >
-              <LogOut size={18} className="mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </motion.aside>
+        <AnimatePresence>
+          <motion.aside
+            initial={{ x: -280 }}
+            animate={{ x: 0 }}
+            exit={{ x: -280 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="glass-panel h-[calc(100vh-73px)] w-64 sticky top-[73px] hidden md:block border-r border-border/40"
+          >
+            <nav className="p-4">
+              <ul className="space-y-2">
+                <NavItem href="/dashboard" icon={<Home size={18} />} label="Dashboard" active={isActive('/dashboard')} />
+                <NavItem href="/upload" icon={<Upload size={18} />} label="Upload" active={isActive('/upload')} />
+                <NavItem href="/analytics" icon={<BarChart3 size={18} />} label="Analytics" active={isActive('/analytics')} />
+                <NavItem href="/settings" icon={<Settings size={18} />} label="Settings" active={isActive('/settings')} />
+              </ul>
+            </nav>
+            
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start text-muted-foreground hover:text-foreground"
+                onClick={handleLogout}
+              >
+                <LogOut size={18} className="mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          </motion.aside>
+        </AnimatePresence>
 
-        <main className="flex-1">
+        <main className="flex-1 min-h-[calc(100vh-73px)]">
           {children}
         </main>
       </div>
