@@ -1,18 +1,23 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize the Supabase client
-// Default to empty strings to prevent runtime errors, but client won't work without proper values
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Default Supabase URL and key for development - these won't work in production
+// You'll need to set up your own Supabase project and add the proper environment variables
+const DEFAULT_SUPABASE_URL = 'https://your-supabase-url.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'your-supabase-anon-key';
 
-// Check if environment variables are set
-if (!supabaseUrl || !supabaseKey) {
-  console.error(
-    "Supabase URL and Anon Key are required. Make sure you've set the environment variables: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY"
+// Initialize the Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+
+// Display helpful console messages for development
+if (supabaseUrl === DEFAULT_SUPABASE_URL || supabaseKey === DEFAULT_SUPABASE_ANON_KEY) {
+  console.warn(
+    "⚠️ Using default Supabase credentials. For full functionality, please set up your own Supabase project and configure the environment variables: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. You can find these in your Supabase project settings under API."
   );
 }
 
+// Create the Supabase client
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Authentication functions
